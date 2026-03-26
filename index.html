@@ -3,10 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Itinerary - Tciket</title>
+    <title>Itinerary - Ticket System</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
+        /* --- LOGIN EKRANI STILI --- */
+        #auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1a237e; display: flex; justify-content: center; align-items: center;
+            z-index: 10000;
+        }
+        .auth-card {
+            background: white; padding: 40px; border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4); width: 100%; max-width: 380px; text-align: center;
+            font-family: 'Inter', sans-serif;
+        }
+        .auth-card h2 { margin-bottom: 25px; color: #1a237e; font-weight: 800; }
+        .auth-card input {
+            width: 100%; padding: 14px; margin-bottom: 15px;
+            border: 2px solid #edf2f7; border-radius: 8px; outline: none; font-size: 16px;
+        }
+        .auth-card button {
+            width: 100%; padding: 14px; background: #4caf50; color: white;
+            border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 16px;
+        }
+        #auth-error { color: #e53e3e; font-size: 14px; margin-bottom: 15px; display: none; font-weight: 600; }
+
+        /* --- ASOSIY SHABLON STILI (ESKI HOLIDA) --- */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -14,27 +37,26 @@
             font-family: 'Inter', sans-serif;
         }
 
-        body {
+        #main-content {
+            display: none; /* Login qilmaguncha yashirin */
             background-color: #525659;
-            display: flex;
             flex-direction: column;
             align-items: center;
             padding: 40px 0;
+            min-height: 100vh;
         }
 
-        /* A4 FORMATI */
         .ticket-wrapper {
             width: 210mm;
             min-height: 297mm;
             background: #fff;
-            padding: 15mm 10mm; /* 10mm = 1sm masofa ikki yon tomondan */
+            padding: 15mm 10mm;
             box-shadow: 0 0 20px rgba(0,0,0,0.3);
             position: relative;
             display: flex;
             flex-direction: column;
         }
 
-        /* BOSHQUV PANELI */
         .no-print-controls {
             width: 210mm;
             background: #1a237e;
@@ -59,12 +81,6 @@
             font-size: 13px;
         }
 
-        .no-print-controls select {
-            outline: none;
-            cursor: pointer;
-        }
-
-        /* TAHRIRLASH */
         [contenteditable="true"]:focus {
             outline: none;
             background: rgba(0,0,0,0.03);
@@ -96,7 +112,6 @@
             text-transform: uppercase;
         }
 
-        /* REYS BLOKLARI SETKASI */
         .flight-row, .pass-meta-grid {
             display: grid;
             grid-template-columns: 1fr 1.3fr 1.3fr 1.8fr;
@@ -128,7 +143,6 @@
         .baggage-box b { display: block; color: #222; margin-top: 4px; }
         .bag-sub { color: #888; font-size: 10px; margin-bottom: 8px; }
 
-        /* FOOTER SETKASI */
         .passenger-section {
             margin-top: auto;
             border-top: 1px solid #eee;
@@ -141,10 +155,7 @@
             margin-bottom: 30px;
         }
 
-        .meta-item.name-col {
-            grid-column: span 2; 
-        }
-
+        .meta-item.name-col { grid-column: span 2; }
         .meta-label { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; }
         .meta-value { font-size: 15px; font-weight: 800; color: #111; }
 
@@ -155,17 +166,13 @@
             margin-top: 15px;
         }
 
-        /* PRINT */
         @media print {
             @page { size: A4; margin: 0; }
-            body { background: none; padding: 0; }
+            body { background: none !important; padding: 0 !important; }
+            #auth-overlay { display: none !important; }
+            #main-content { display: flex !important; background: none; padding: 0; }
             .no-print-controls { display: none; }
-            .ticket-wrapper {
-                box-shadow: none;
-                width: 210mm;
-                height: 297mm;
-                padding: 15mm 10mm;
-            }
+            .ticket-wrapper { box-shadow: none; width: 210mm; height: 297mm; padding: 15mm 10mm; }
             .flight-row {
                 background-color: #f1f3f5 !important;
                 -webkit-print-color-adjust: exact;
@@ -176,66 +183,113 @@
 </head>
 <body>
 
-    <div class="no-print-controls">
-        <button onclick="updateFlights(1)">Borish</button>
-        <button onclick="updateFlights(2)">Borish va Qaytish</button>
-        
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <label style="color: white; font-size: 13px; font-weight: 600;">Multi-city:</label>
-            <select id="multiCitySelect" onchange="updateFlights(this.value)">
-                <option value="" disabled selected>Tanlang</option>
-                <option value="3">3 ta reys</option>
-                <option value="4">4 ta reys</option>
-                <option value="5">5 ta reys</option>
-                <option value="6">6 ta reys</option>
-            </select>
+    <!-- LOGIN PANEL -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2>Tizimga kirish</h2>
+            <div id="auth-error">Login yoki parol noto'g'ri!</div>
+            <input type="text" id="login-field" placeholder="Login">
+            <input type="password" id="pass-field" placeholder="Parol">
+            <button onclick="attemptLogin()">KIRISH</button>
+            <p style="margin-top: 15px; font-size: 11px; color: #888;">Kirish uchun admin ruxsati kerak.</p>
         </div>
-
-        <button onclick="window.print()" style="background: #4caf50; color: white;">Yuklab olish</button>
     </div>
 
-    <div class="ticket-wrapper">
-        <header>
-            <div class="logo-section">
-                <img src="./travel.png" alt="Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/180x80?text=LOGO'">
+    <!-- ASOSIY SHABLON (ESKI HOLIDA) -->
+    <div id="main-content">
+        <div class="no-print-controls">
+            <button onclick="updateFlights(1)">Borish</button>
+            <button onclick="updateFlights(2)">Borish va Qaytish</button>
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="color: white; font-size: 13px; font-weight: 600;">Multi-city:</label>
+                <select id="multiCitySelect" onchange="updateFlights(this.value)">
+                    <option value="" disabled selected>Tanlang</option>
+                    <option value="3">3 ta reys</option>
+                    <option value="4">4 ta reys</option>
+                    <option value="5">5 ta reys</option>
+                    <option value="6">6 ta reys</option>
+                </select>
             </div>
-            <div class="company-contact" contenteditable="true">
-                <p>Toshkent, Yakkasaray Sh. Rustaveli 60</p>
-                <p>+998 50 500 5001</p>
-            </div>
-        </header>
 
-        <div class="itinerary-header" contenteditable="true">
-           ELECTRONIC TICKET ITINERARY 
+            <button onclick="window.print()" style="background: #4caf50; color: white;">Yuklab olish</button>
+            <button onclick="logout()" style="background: #f44336; color: white;">Chiqish</button>
         </div>
 
-        <!-- Reyslar konteyneri -->
-        <div id="flight-container"></div>
+        <div class="ticket-wrapper">
+            <header>
+                <div class="logo-section">
+                    <img src="./travel.png" alt="Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/180x80?text=LOGO'">
+                </div>
+                <div class="company-contact" contenteditable="true">
+                    <p>Toshkent, Yakkasaray Sh. Rustaveli 60</p>
+                    <p>+998 50 500 5001</p>
+                </div>
+            </header>
 
-        <!-- Pastki qism -->
-        <div class="passenger-section">
-            <div class="pass-meta-grid">
-                <div class="meta-item name-col">
-                    <div class="meta-label">Yo'lovchi / Passenger</div>
-                    <div class="meta-value" contenteditable="true">ISM FAMILIA</div>
-                </div>
-                <div class="meta-item">
-                    <div class="meta-label">Buyurtma / Reference</div>
-                    <div class="meta-value" contenteditable="true">MSADSDS</div>
-                </div>
-                <div class="meta-item">
-                    <div class="meta-label">Bilet raqami / Ticket number</div>
-                    <div class="meta-value" contenteditable="true">784-2133031245</div>
-                </div>
+            <div class="itinerary-header" contenteditable="true">
+               ELECTRONIC TICKET ITINERARY 
             </div>
 
-            <div class="legal-text" contenteditable="true">
-                Ko‘rsatilgan uchish vaqti va samolyot turi, chipta bron qilingan paytdagi ma’lumotga asoslangan. Aviakompaniya uchish vaqtini va samolyotni turini almashtirish huquqiga ega! Ro'yhatga olish parvoz vaqtidan 3 soat oldin boshlanadi va parvoz vaqtiga 1 soat qolganda to'xtatiladi. The indicated departure time and aircraft type are based on the information available at the time of ticket booking. The airline reserves the right to change the departure time and aircraft type. Check-in opens 3 hours before departure and closes 1 hour before the flight
+            <div id="flight-container"></div>
+
+            <div class="passenger-section">
+                <div class="pass-meta-grid">
+                    <div class="meta-item name-col">
+                        <div class="meta-label">Yo'lovchi / Passenger</div>
+                        <div class="meta-value" contenteditable="true">ISM FAMILIA</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Buyurtma / Reference</div>
+                        <div class="meta-value" contenteditable="true">MSADSDS</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Bilet raqami / Ticket number</div>
+                        <div class="meta-value" contenteditable="true">784-2133031245</div>
+                    </div>
+                </div>
+
+                <div class="legal-text" contenteditable="true">
+                    Ko‘rsatilgan uchish vaqti va samolyot turi, chipta bron qilingan paytdagi ma’lumotga asoslangan. Aviakompaniya uchish vaqtini va samolyotni turini almashtirish huquqiga ega! Ro'yhatga olish parvoz vaqtidan 3 soat oldin boshlanadi va parvoz vaqtiga 1 soat qolganda to'xtatiladi. The indicated departure time and aircraft type are based on the information available at the time of ticket booking. The airline reserves the right to change the departure time and aircraft type. Check-in opens 3 hours before departure and closes 1 hour before the flight
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        /* AUTH LOGIC */
+        const _U = "YWRtaW4="; // admin
+        const _P = "dHJhdmVsNzc3"; // travel777
+
+        function attemptLogin() {
+            const u = document.getElementById('login-field').value;
+            const p = document.getElementById('pass-field').value;
+            if (btoa(u) === _U && btoa(p) === _P) {
+                localStorage.setItem('auth_ticket_sys', 'OK');
+                showApp();
+            } else {
+                document.getElementById('auth-error').style.display = 'block';
+            }
+        }
+
+        function showApp() {
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('main-content').style.display = 'flex';
+            updateFlights(1);
+        }
+
+        function logout() {
+            localStorage.removeItem('auth_ticket_sys');
+            location.reload();
+        }
+
+        window.onload = () => {
+            if (localStorage.getItem('auth_ticket_sys') === 'OK') {
+                showApp();
+            }
+        }
+
+        /* TICKET LOGIC (ESKI HOLIDA) */
         function updateFlights(count) {
             if(!count) return;
             const container = document.getElementById('flight-container');
@@ -272,8 +326,6 @@
                     </div>`;
             }
         }
-        // Ilk yuklanganda 1 ta reys
-        window.onload = () => updateFlights(1);
     </script>
 </body>
 </html>
